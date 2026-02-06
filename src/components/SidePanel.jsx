@@ -47,23 +47,20 @@ function SidePanel({
           <h3>Generator</h3>
           {/* <button onClick={handleClickOnLoadValues}>Load default values</button> */}
           <button
-            onClick={() => {
-              handleClickOnGenerate(true, 20);
-            }}
+            disabled
+            style={{ opacity: 0.5, cursor: 'not-allowed' }}
           >
             Generate grid Easy
           </button>
           <button
-            onClick={() => {
-              handleClickOnGenerate(true, 30);
-            }}
+            disabled
+            style={{ opacity: 0.5, cursor: 'not-allowed' }}
           >
             Generate grid Medium
           </button>
           <button
-            onClick={() => {
-              handleClickOnGenerate(true, 40);
-            }}
+            disabled
+            style={{ opacity: 0.5, cursor: 'not-allowed' }}
           >
             Generate grid Hard
           </button>

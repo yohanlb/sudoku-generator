@@ -35,7 +35,6 @@ function App() {
     for (let i = 0; i < 9 * 9; i++) {
       tempCells.push(new Cell(i));
     }
-    tempCells = LoadGridValues(tempCells, GridValues.arrayA);
     dispatch({ type: 'SET_CELLS', cells: tempCells });
   }, []);
 
@@ -53,7 +52,10 @@ function App() {
 
   const handleClickOnSolve = (stepByStep = false) => {
     if (!Solver.checkIfGridIsValid(cells)) {
-      dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid is not valid, please check your values' });
+      dispatch({
+        type: 'SET_DISPLAY_MESSAGE',
+        message: 'Grid is not valid, please check your values',
+      });
       return;
     }
     const solverResult = Solver.solveGrid(
@@ -67,22 +69,12 @@ function App() {
     dispatch({ type: 'SET_DISPLAY_MESSAGE', message: solverResult[1] });
   };
 
-  const handleClickOnGenerate = (stepByStep, difficulty) => {
-    if (!Solver.checkIfGridIsValid(cells)) {
-      dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid is not valid, please check your values' });
-      return;
-    }
-    let generatedGrid = GridFunc.cloneGrid(cells);
-    generatedGrid = Solver.generateAGrid(
-      generatedGrid,
-      addToHistory,
-      true,
-      difficulty
-    );
-    if (generatedGrid && !stepByStep) {
-      dispatch({ type: 'SET_CELLS', cells: generatedGrid });
-    }
-    dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid generated with success' });
+  const handleClickOnGenerate = (stepByStep, nbOfCellsToShow) => {
+    // Generate feature disabled
+    dispatch({
+      type: 'SET_DISPLAY_MESSAGE',
+      message: 'Generate feature temporarily disabled',
+    });
   };
 
   const handleClickOnCell = (event, _key, isRightClick = false) => {
@@ -105,7 +97,10 @@ function App() {
     newCells[_cellKey].setPossibleValues(
       Solver.getPossibleValuesForCell(newCells, newCells[_cellKey])
     );
-    dispatch({ type: 'SET_CELL_INFO', cellInfo: newCells[_cellKey].getCellInfo() });
+    dispatch({
+      type: 'SET_CELL_INFO',
+      cellInfo: newCells[_cellKey].getCellInfo(),
+    });
 
     const keysToHighlight = [
       ...GridFunc.returnSquareKeys(newCells[_cellKey]),
