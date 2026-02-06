@@ -1,114 +1,77 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useReducer } from 'react';
 import CellDisplay from './components/CellDisplay';
 import Cell from './scripts/Cell';
 import * as GridFunc from './scripts/gridFunctions.js';
 import * as GridValues from './scripts/gridValues.js';
 import * as Solver from './scripts/solver.js';
 import SidePanel from './components/SidePanel';
+import { useInterval } from './hooks/useInterval';
+import {
+  initialState,
+  LoadGridValues,
+  sudokuReducer,
+} from './state/sudokuReducer';
 
 import './styles/App.scss';
 
-let history = [];
-let clearGrid = false;
 function App() {
-  const [cells, setCells] = useState([]);
-  const [displayMessage, setDisplayMessage] = useState('');
-  const [cellInfo, setCellInfo] = useState({});
+  const [state, dispatch] = useReducer(sudokuReducer, initialState);
+  const { cells, displayMessage, cellInfo } = state;
+
+  const addToHistory = (newStep) => {
+    if (newStep === -1) {
+      dispatch({ type: 'CLEAR_HISTORY' });
+    } else {
+      dispatch({ type: 'QUEUE_STEP', step: newStep });
+    }
+  };
 
   useInterval(() => {
-    Tick();
+    dispatch({ type: 'APPLY_STEP' });
   }, 10);
-
-  const Tick = () => {
-    // PLAY HISTORY
-    if (clearGrid) {
-      setCells(ClearGridValues(cells));
-      clearGrid = false;
-      console.log('clear');
-    } else if (history.length > 0) {
-      const newCells = [...cells];
-
-      newCells[history[0].key].setSolvedValue(history[0].solvedValue);
-      setCells(newCells);
-      history.shift();
-    }
-  };
-
-  const addToHistory = (_newStep) => {
-    if (_newStep === -1) {
-      history = [];
-    } else {
-      history = history.concat(_newStep);
-    }
-  };
 
   useEffect(() => {
     let tempCells = [];
     for (let i = 0; i < 9 * 9; i++) {
       tempCells.push(new Cell(i));
     }
-
-    console.log(tempCells);
     tempCells = LoadGridValues(tempCells, GridValues.arrayA);
-    setCells(tempCells);
+    dispatch({ type: 'SET_CELLS', cells: tempCells });
   }, []);
-
-  const ClearGridValues = (_cells) => {
-    let newCells = GridFunc.cloneGrid(_cells);
-
-    history = []; //clear history
-    newCells.forEach((cell) => {
-      cell.clearCell();
-    });
-
-    return newCells;
-  };
-
-  const LoadGridValues = (_cells, values) => {
-    let newCells = GridFunc.cloneGrid(_cells);
-
-    history = []; //clear history
-    newCells = ClearGridValues(newCells);
-    newCells.forEach((cell) => {
-      if (values[cell.key] !== 0) {
-        cell.setGivenValue(values[cell.key]);
-      }
-    });
-    return newCells;
-  };
 
   /***************** HANDLE CLICKS ****************/
 
   const handleClickOnClearAll = () => {
-    setCells(ClearGridValues(cells));
+    dispatch({ type: 'CLEAR_GRID' });
   };
+
   const handleClickOnLoadValues = () => {
-    setCells(LoadGridValues(cells, GridValues.arrayError));
+    const newCells = LoadGridValues(cells, GridValues.arrayError);
+    dispatch({ type: 'SET_CELLS', cells: newCells });
+    dispatch({ type: 'CLEAR_HISTORY' });
   };
 
   const handleClickOnSolve = (stepByStep = false) => {
     if (!Solver.checkIfGridIsValid(cells)) {
-      setDisplayMessage('Grid is not valid, please check your values');
+      dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid is not valid, please check your values' });
       return;
     }
-
     const solverResult = Solver.solveGrid(
       GridFunc.cloneGrid(cells),
       addToHistory,
       stepByStep
     );
     if (!stepByStep) {
-      setCells(solverResult[0]);
+      dispatch({ type: 'SET_CELLS', cells: solverResult[0] });
     }
-    setDisplayMessage(solverResult[1]);
+    dispatch({ type: 'SET_DISPLAY_MESSAGE', message: solverResult[1] });
   };
 
   const handleClickOnGenerate = (stepByStep, difficulty) => {
     if (!Solver.checkIfGridIsValid(cells)) {
-      setDisplayMessage('Grid is not valid, please check your values');
+      dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid is not valid, please check your values' });
       return;
     }
-
     let generatedGrid = GridFunc.cloneGrid(cells);
     generatedGrid = Solver.generateAGrid(
       generatedGrid,
@@ -116,63 +79,53 @@ function App() {
       true,
       difficulty
     );
-    if (generatedGrid && !stepByStep) setCells(generatedGrid);
-    setDisplayMessage('Grid generated with success');
+    if (generatedGrid && !stepByStep) {
+      dispatch({ type: 'SET_CELLS', cells: generatedGrid });
+    }
+    dispatch({ type: 'SET_DISPLAY_MESSAGE', message: 'Grid generated with success' });
   };
 
   const handleClickOnCell = (event, _key, isRightClick = false) => {
     event.preventDefault();
-    let newCells = GridFunc.cloneGrid(cells);
-
-    let clickedCell = newCells[_key];
-
+    const newCells = GridFunc.cloneGrid(cells);
+    const clickedCell = newCells[_key];
     if (clickedCell != null) {
-      //calc new cell value
       let newCellValue = clickedCell.guessedValue + (isRightClick ? -1 : 1);
-      newCellValue < 0 && (newCellValue = 9);
-      newCellValue > 9 && (newCellValue = 0);
-
-      //assign the new cell value and update de main array;
+      if (newCellValue < 0) newCellValue = 9;
+      if (newCellValue > 9) newCellValue = 0;
       clickedCell.setGuessedValue(newCellValue);
-      setCells(newCells);
+      dispatch({ type: 'SET_CELLS', cells: newCells });
     }
   };
 
   /************** HANDLE MOUSE OVER *****************/
 
   const handleMouseOver = (_cellKey) => {
-    let newCells = GridFunc.cloneGrid(cells);
+    const newCells = GridFunc.cloneGrid(cells);
     newCells[_cellKey].setPossibleValues(
       Solver.getPossibleValuesForCell(newCells, newCells[_cellKey])
     );
-    setCellInfo(newCells[_cellKey].getCellInfo());
+    dispatch({ type: 'SET_CELL_INFO', cellInfo: newCells[_cellKey].getCellInfo() });
 
-    let keysToHighlight = [];
-    keysToHighlight = keysToHighlight.concat(
-      GridFunc.returnSquareKeys(newCells[_cellKey])
-    );
-    keysToHighlight = keysToHighlight.concat(
-      GridFunc.returnEntireColKeys(newCells, _cellKey)
-    );
-    keysToHighlight = keysToHighlight.concat(
-      GridFunc.returnEntireRowKeys(newCells, _cellKey)
-    );
+    const keysToHighlight = [
+      ...GridFunc.returnSquareKeys(newCells[_cellKey]),
+      ...GridFunc.returnEntireColKeys(newCells, _cellKey),
+      ...GridFunc.returnEntireRowKeys(newCells, _cellKey),
+    ];
 
     newCells.forEach((cell) => {
-      const highlight = keysToHighlight.indexOf(cell.key) === -1 ? false : true;
-      cell.setHovered(highlight);
+      cell.setHovered(keysToHighlight.indexOf(cell.key) !== -1);
     });
-
-    setCells(newCells);
+    dispatch({ type: 'SET_CELLS', cells: newCells });
   };
 
   const handleMouseLeaveGrid = () => {
-    setCellInfo({});
+    dispatch({ type: 'SET_CELL_INFO', cellInfo: {} });
     const newCells = GridFunc.cloneGrid(cells);
     newCells.forEach((cell) => {
       cell.setHovered(false);
     });
-    setCells(newCells);
+    dispatch({ type: 'SET_CELLS', cells: newCells });
   };
 
   /************* RENDER ******************/
@@ -181,16 +134,14 @@ function App() {
     <div className="App">
       <div className="grid-container">
         <div className="grid" onMouseLeave={handleMouseLeaveGrid}>
-          {cells.map((cell) => {
-            return (
-              <CellDisplay
-                key={cell.key}
-                cell={cell}
-                handleClickOnCell={handleClickOnCell}
-                handleMouseOver={handleMouseOver}
-              />
-            );
-          })}
+          {cells.map((cell) => (
+            <CellDisplay
+              key={cell.key}
+              cell={cell}
+              handleClickOnCell={handleClickOnCell}
+              handleMouseOver={handleMouseOver}
+            />
+          ))}
         </div>
       </div>
 
@@ -207,22 +158,3 @@ function App() {
 }
 
 export default App;
-
-// Allow to use interval with hooks
-function useInterval(callback, delay) {
-  const savedCallback = useRef();
-
-  useEffect(() => {
-    savedCallback.current = callback;
-  });
-
-  useEffect(() => {
-    function tick() {
-      savedCallback.current();
-    }
-    if (delay !== null) {
-      let id = setInterval(tick, delay);
-      return () => clearInterval(id);
-    }
-  }, [delay]);
-}
