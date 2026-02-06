@@ -38,14 +38,26 @@ export function sudokuReducer(state, action) {
       return { ...state, grid: action.grid };
     case 'SET_DISPLAY_MESSAGE':
       return { ...state, displayMessage: action.message };
-    case 'SET_CELL_INFO':
-      return { ...state, cellInfo: action.cellInfo };
-    case 'SET_UI_STATE':
+    case 'SET_HOVER_CELL': {
+      const { cellKey, cellInfo, highlightedCells } = action.payload;
       return {
         ...state,
+        cellInfo,
         ui: {
           ...state.ui,
-          ...action.ui,
+          hoveredCell: cellKey,
+          highlightedCells,
+        },
+      };
+    }
+    case 'CLEAR_HOVER':
+      return {
+        ...state,
+        cellInfo: {},
+        ui: {
+          ...state.ui,
+          hoveredCell: null,
+          highlightedCells: [],
         },
       };
     case 'CLEAR_GRID':

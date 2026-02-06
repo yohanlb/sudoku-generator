@@ -1,9 +1,8 @@
 import React, { useReducer } from 'react';
 import CellDisplay from './components/CellDisplay';
 import SidePanel from './components/SidePanel';
-import * as GridFunc from './core/grid.js';
-import * as Solver from './core/solver.js';
 import { useInterval } from './hooks/useInterval';
+import { useSudokuHandlers } from './hooks/useSudokuHandlers';
 import { initialState, sudokuReducer } from './state/sudokuReducer';
 
 import './styles/App.scss';
@@ -11,101 +10,19 @@ import './styles/App.scss';
 function App() {
   const [state, dispatch] = useReducer(sudokuReducer, initialState);
   const { grid, ui, displayMessage, cellInfo } = state;
-
-  const addToHistory = (newStep) => {
-    if (newStep === -1) {
-      dispatch({ type: 'CLEAR_HISTORY' });
-    } else {
-      dispatch({ type: 'QUEUE_STEP', step: newStep });
-    }
-  };
+  const handlers = useSudokuHandlers(state, dispatch);
 
   useInterval(() => {
     dispatch({ type: 'APPLY_STEP' });
   }, 10);
-
-  /***************** HANDLE CLICKS ****************/
-
-  const handleClickOnClearAll = () => {
-    dispatch({ type: 'CLEAR_GRID' });
-  };
-
-  const handleClickOnSolve = (stepByStep = false) => {
-    if (!Solver.checkIfGridIsValid(grid)) {
-      dispatch({
-        type: 'SET_DISPLAY_MESSAGE',
-        message: 'Grid is not valid, please check your values',
-      });
-      return;
-    }
-    const solverResult = Solver.solveGrid(
-      GridFunc.cloneGrid(grid),
-      addToHistory,
-      stepByStep
-    );
-    if (!stepByStep) {
-      dispatch({ type: 'SET_GRID', grid: solverResult[0] });
-    }
-    dispatch({ type: 'SET_DISPLAY_MESSAGE', message: solverResult[1] });
-  };
-
-  const handleClickOnCell = (event, cellKey, isRightClick = false) => {
-    event.preventDefault();
-    const newGrid = GridFunc.cycleInputValue(
-      grid,
-      cellKey,
-      isRightClick ? -1 : 1
-    );
-    if (newGrid !== grid) {
-      dispatch({ type: 'SET_GRID', grid: newGrid });
-    }
-  };
-
-  /************** HANDLE MOUSE OVER *****************/
-
-  const handleMouseOver = (cellKey) => {
-    const possibleValues = Solver.getPossibleValuesForCell(grid, cellKey);
-    const [x, y] = GridFunc.keyToCoord(cellKey);
-    dispatch({
-      type: 'SET_CELL_INFO',
-      cellInfo: {
-        key: cellKey,
-        x,
-        y,
-        possibleValues,
-      },
-    });
-
-    const keysToHighlight = GridFunc.getRelatedCellKeys(cellKey);
-    dispatch({
-      type: 'SET_UI_STATE',
-      ui: {
-        hoveredCell: cellKey,
-        highlightedCells: keysToHighlight,
-      },
-    });
-  };
-
-  const handleMouseLeaveGrid = () => {
-    dispatch({ type: 'SET_CELL_INFO', cellInfo: {} });
-    dispatch({
-      type: 'SET_UI_STATE',
-      ui: {
-        hoveredCell: null,
-        highlightedCells: [],
-      },
-    });
-  };
-
-  /************* RENDER ******************/
 
   const highlightedLookup = new Set(ui.highlightedCells);
 
   return (
     <div className="App">
       <div className="grid-container">
-        <div className="grid" onMouseLeave={handleMouseLeaveGrid}>
-          {Array.from({ length: GridFunc.GRID_CELL_COUNT }, (_, cellKey) => (
+        <div className="grid" onMouseLeave={handlers.handleMouseLeaveGrid}>
+          {Array.from({ length: grid.values.length }, (_, cellKey) => (
             <CellDisplay
               key={cellKey}
               cellKey={cellKey}
@@ -113,8 +30,8 @@ function App() {
               solvedValue={grid.solved[cellKey]}
               isGiven={grid.given[cellKey]}
               isHighlighted={highlightedLookup.has(cellKey)}
-              handleClickOnCell={handleClickOnCell}
-              handleMouseOver={handleMouseOver}
+              handleClickOnCell={handlers.handleClickOnCell}
+              handleMouseOver={handlers.handleMouseOver}
             />
           ))}
         </div>
@@ -122,8 +39,8 @@ function App() {
 
       <SidePanel
         cellInfo={cellInfo}
-        handleClickOnSolve={handleClickOnSolve}
-        handleClickOnClearAll={handleClickOnClearAll}
+        handleClickOnSolve={handlers.handleClickOnSolve}
+        handleClickOnClearAll={handlers.handleClickOnClearAll}
         displayMessage={displayMessage}
       />
     </div>
