@@ -1,20 +1,17 @@
 {
-  "name": "sudoku",
+  "name": "sudoku generator and solver",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "dependencies": {
-    "@testing-library/jest-dom": "^6.1.5",
-    "@testing-library/react": "^14.1.2",
-    "@testing-library/user-event": "^14.5.1",
-    "gh-pages": "^6.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
+    "gh-pages": "^6.1.1",
     "sass": "^1.69.5",
-    "vite": "^5.0.10"
+    "vite": "^7.3.1"
   },
   "scripts": {
     "dev": "vite",
