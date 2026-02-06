@@ -3,11 +3,29 @@ import * as GridFunc from './gridFunctions.js';
 let loopCount;
 const maxLoop = 300;
 
-export const solveGrid = (cells, addToHistory = null, stepByStep = false) => {
-  let newCells = GridFunc.cloneGrid(cells);
+const getCellValue = (
+  grid,
+  key,
+  considerSolved = true,
+  considerInput = true
+) => {
+  if (grid.given[key] && grid.values[key] > 0) {
+    return grid.values[key];
+  }
+  if (considerSolved && grid.solved[key] > 0) {
+    return grid.solved[key];
+  }
+  if (considerInput && grid.values[key] > 0) {
+    return grid.values[key];
+  }
+  return 0;
+};
+
+export const solveGrid = (grid, addToHistory = null, stepByStep = false) => {
+  let nextGrid = GridFunc.cloneGrid(grid);
   let isSolved = false;
 
-  if (!checkIfGridIsValid(cells)) {
+  if (!checkIfGridIsValid(grid)) {
     console.log('grid not valid');
   }
 
@@ -16,8 +34,8 @@ export const solveGrid = (cells, addToHistory = null, stepByStep = false) => {
   while (!isSolved && attempts < 50) {
     loopCount = 0;
     attempts++;
-    newCells = GridFunc.cloneGrid(cells);
-    isSolved = recursiveSolver(newCells, 0, addToHistory, stepByStep);
+    nextGrid = GridFunc.cloneGrid(grid);
+    isSolved = recursiveSolver(nextGrid, 0, addToHistory, stepByStep);
   }
   console.log(
     'loop count : ',
@@ -29,80 +47,68 @@ export const solveGrid = (cells, addToHistory = null, stepByStep = false) => {
   );
 
   if (!isSolved) {
-    GridFunc.saveGrid(newCells);
+    GridFunc.saveGrid(nextGrid);
   }
   const resultMessage = isSolved ? 'Success' : 'Error';
-  return [newCells, resultMessage];
+  return [nextGrid, resultMessage];
 };
 
-const recursiveSolver = (cells, key, addToHistory, stepByStep) => {
+const recursiveSolver = (grid, key, addToHistory, stepByStep) => {
   loopCount++;
   if (loopCount > maxLoop) {
     return false;
   }
-  if (!checkIfGridIsValid(cells)) {
+  if (!checkIfGridIsValid(grid)) {
     console.log('grid not valid');
   }
   if (loopCount > maxLoop + 100)
     throw new Error('Error while solving the grid');
-  const useGuessedValues = true;
+  const useInputValues = true;
 
-  if (key >= 9 * 9) {
+  if (key >= GridFunc.GRID_CELL_COUNT) {
     return true;
   } //Solving finished
 
-  const currentCell = cells[key];
-  const cellValue =
-    currentCell.solvedValue > 0 ||
-    currentCell.actualValue > 0 ||
-    (useGuessedValues && currentCell.guessedValue > 0);
+  const cellValue = getCellValue(grid, key, true, useInputValues) > 0;
 
   // this cell is already solved, go to next cell
   if (cellValue) {
-    return recursiveSolver(cells, key + 1, addToHistory, stepByStep);
+    return recursiveSolver(grid, key + 1, addToHistory, stepByStep);
   }
 
-  const possibleValues = getPossibleValuesForCell(cells, currentCell);
-  let shuffledValues = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const possibleValues = getPossibleValuesForCell(grid, key);
+  const shuffledValues = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
   for (let i = 1; i <= 9; i++) {
     if (possibleValues.some((value) => value === shuffledValues[i - 1])) {
       setSolvedValueWithHistory(
-        currentCell,
+        grid,
+        key,
         shuffledValues[i - 1],
         stepByStep,
         addToHistory
       );
 
       // try to resolve the rest of the array with this value for the current cell
-      if (recursiveSolver(cells, key + 1, addToHistory, stepByStep))
-        return true;
+      if (recursiveSolver(grid, key + 1, addToHistory, stepByStep)) return true;
     }
   }
 
-  setSolvedValueWithHistory(currentCell, 0, stepByStep, addToHistory);
+  setSolvedValueWithHistory(grid, key, 0, stepByStep, addToHistory);
 
   return false; // this grid is not solvable, going back to previous recursion.
 };
 
-export const checkIfGridIsValid = (cells) => {
+export const checkIfGridIsValid = (grid) => {
   let isValid = true;
-  cells.forEach((cell) => {
-    const possibleValues = getPossibleValuesForCell(cells, cell, true);
-
-    let cellValue = 0;
-    if (cell.actualValue > 0) {
-      cellValue = cell.actualValue;
-    } else if (cell.solvedValue > 0) {
-      cellValue = cell.solvedValue;
-    } else if (cell.guessedValue > 0) {
-      cellValue = cell.guessedValue;
-    }
+  for (let key = 0; key < GridFunc.GRID_CELL_COUNT; key++) {
+    const possibleValues = getPossibleValuesForCell(grid, key, true);
+    const cellValue = getCellValue(grid, key, true, true);
     if (cellValue > 0 && possibleValues.indexOf(cellValue) === -1) {
       // if there is more than one cell with the same value
-      console.log('Wrong grid values for cell : ', cell.key);
+      console.log('Wrong grid values for cell : ', key);
       isValid = false;
     }
-  });
+  }
 
   return isValid;
 };
@@ -111,48 +117,46 @@ export const checkIfGridIsValid = (cells) => {
 
 const shuffle = (array) => {
   for (let i = array.length - 1; i > 0; i--) {
-    let j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [array[i], array[j]] = [array[j], array[i]];
   }
   return array;
 };
 
-const setSolvedValueWithHistory = (cell, value, stepByStep, addToHistory) => {
-  cell.setSolvedValue(value);
-  if (stepByStep && value > 0) {
-    addToHistory({
-      key: cell.key,
-      solvedValue: value,
-    });
+const setSolvedValueWithHistory = (
+  grid,
+  key,
+  value,
+  stepByStep,
+  addToHistory
+) => {
+  grid.solved[key] = value;
+  if (stepByStep && value > 0 && addToHistory) {
+    addToHistory({ key, solvedValue: value });
   }
 };
 
 export const getPossibleValuesForCell = (
-  cells,
-  cell,
-  considerGuessedValues = true
+  grid,
+  cellKey,
+  considerInputValues = true
 ) => {
   const valuesAvailability = new Array(9).fill(1);
 
-  //get all the cells in range of the selected one
-  let cellsInRange = [];
-  cellsInRange = cellsInRange.concat(GridFunc.returnSquareCells(cells, cell));
-  cellsInRange = cellsInRange.concat(
-    GridFunc.returnEntireRowCells(cells, cell)
-  );
-  cellsInRange = cellsInRange.concat(
-    GridFunc.returnEntireColCells(cells, cell)
-  );
-
-  //filter out the selected cell
-  cellsInRange = cellsInRange.filter((item) => item.key !== cell.key);
+  // get all keys in range for the selected cell
+  const keysInRange = new Set([
+    ...GridFunc.returnSquareKeys(cellKey),
+    ...GridFunc.returnEntireRowKeys(grid, cellKey),
+    ...GridFunc.returnEntireColKeys(grid, cellKey),
+  ]);
+  keysInRange.delete(cellKey);
 
   //find which values are already used among all the cells in range
-  cellsInRange.forEach((el) => {
-    if (el.actualValue > 0) valuesAvailability[el.actualValue - 1] = 0;
-    else if (el.solvedValue > 0) valuesAvailability[el.solvedValue - 1] = 0;
-    else if (considerGuessedValues && el.guessedValue > 0)
-      valuesAvailability[el.guessedValue - 1] = 0;
+  keysInRange.forEach((key) => {
+    const cellValue = getCellValue(grid, key, true, considerInputValues);
+    if (cellValue > 0) {
+      valuesAvailability[cellValue - 1] = 0;
+    }
   });
 
   // create an array with only the available values

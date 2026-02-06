@@ -1,63 +1,71 @@
 import React, { useState } from 'react';
 
-function CellDisplay({ cell, handleClickOnCell, handleMouseOver }) {
+function CellDisplay({
+  cellKey,
+  value,
+  solvedValue,
+  isGiven,
+  isHighlighted,
+  handleClickOnCell,
+  handleMouseOver,
+}) {
   const [isClicked, setIsClicked] = useState(false);
 
   const handleClick = (e, isRightClick = false) => {
-    handleClickOnCell(e, cell.key, isRightClick);
+    handleClickOnCell(e, cellKey, isRightClick);
     setIsClicked(true);
   };
 
   const displayCellValue = () => {
-    if (cell.isGiven) {
+    if (isGiven) {
       const cellClass =
-        'cell-inner isGiven ' + (cell.highlighted ? ' highlighted' : '');
+        'cell-inner isGiven ' + (isHighlighted ? ' highlighted' : '');
       return (
         <div
           className={cellClass}
           onMouseOver={() => {
-            handleMouseOver(cell.key);
+            handleMouseOver(cellKey);
           }}
         >
-          <span className="cell-number">{cell.actualValue}</span>
+          <span className="cell-number">{value}</span>
         </div>
       );
-    } else if (cell.solvedValue > 0) {
+    } else if (solvedValue > 0) {
       const cellClass =
-        'cell-inner isSolved ' + (cell.highlighted ? ' highlighted' : '');
+        'cell-inner isSolved ' + (isHighlighted ? ' highlighted' : '');
       return (
         <div
           className={cellClass}
           onMouseOver={() => {
-            handleMouseOver(cell.key);
+            handleMouseOver(cellKey);
           }}
         >
-          <span className="cell-number">{cell.solvedValue}</span>
+          <span className="cell-number">{solvedValue}</span>
         </div>
       );
-    } else if (cell.actualValue > 0) {
+    } else if (value > 0) {
       const cellClass =
-        'cell-inner isActual ' + (cell.highlighted ? ' highlighted' : '');
+        'cell-inner isActual ' + (isHighlighted ? ' highlighted' : '');
       return (
         <div
           className={cellClass}
           onMouseOver={() => {
-            handleMouseOver(cell.key);
+            handleMouseOver(cellKey);
           }}
         >
-          <span className="cell-number">{cell.actualValue}</span>
+          <span className="cell-number">{value}</span>
         </div>
       );
     } else {
       const cellClass =
         'cell-inner notGiven ' +
         (isClicked ? ' clicked' : '') +
-        (cell.highlighted ? ' highlighted' : '');
+        (isHighlighted ? ' highlighted' : '');
       return (
         <div
           className={cellClass}
           onMouseOver={() => {
-            handleMouseOver(cell.key);
+            handleMouseOver(cellKey);
           }}
           onTransitionEnd={() => {
             setIsClicked(false);
@@ -69,9 +77,7 @@ function CellDisplay({ cell, handleClickOnCell, handleMouseOver }) {
             handleClick(e, true);
           }}
         >
-          <span className="cell-number">
-            {cell.guessedValue === 0 ? '' : cell.guessedValue}
-          </span>
+          <span className="cell-number">{value === 0 ? '' : value}</span>
         </div>
       );
     }

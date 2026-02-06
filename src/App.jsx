@@ -1,6 +1,5 @@
-import React, { useEffect, useReducer } from 'react';
+import React, { useReducer } from 'react';
 import CellDisplay from './components/CellDisplay';
-import Cell from './scripts/Cell';
 import * as GridFunc from './scripts/gridFunctions.js';
 import * as Solver from './scripts/solver.js';
 import SidePanel from './components/SidePanel';
@@ -11,7 +10,7 @@ import './styles/App.scss';
 
 function App() {
   const [state, dispatch] = useReducer(sudokuReducer, initialState);
-  const { cells, displayMessage, cellInfo } = state;
+  const { grid, ui, displayMessage, cellInfo } = state;
 
   const addToHistory = (newStep) => {
     if (newStep === -1) {
@@ -25,14 +24,6 @@ function App() {
     dispatch({ type: 'APPLY_STEP' });
   }, 10);
 
-  useEffect(() => {
-    const initialCells = [];
-    for (let i = 0; i < 9 * 9; i++) {
-      initialCells.push(new Cell(i));
-    }
-    dispatch({ type: 'SET_CELLS', cells: initialCells });
-  }, []);
-
   /***************** HANDLE CLICKS ****************/
 
   const handleClickOnClearAll = () => {
@@ -40,7 +31,7 @@ function App() {
   };
 
   const handleClickOnSolve = (stepByStep = false) => {
-    if (!Solver.checkIfGridIsValid(cells)) {
+    if (!Solver.checkIfGridIsValid(grid)) {
       dispatch({
         type: 'SET_DISPLAY_MESSAGE',
         message: 'Grid is not valid, please check your values',
@@ -48,72 +39,88 @@ function App() {
       return;
     }
     const solverResult = Solver.solveGrid(
-      GridFunc.cloneGrid(cells),
+      GridFunc.cloneGrid(grid),
       addToHistory,
       stepByStep
     );
     if (!stepByStep) {
-      dispatch({ type: 'SET_CELLS', cells: solverResult[0] });
+      dispatch({ type: 'SET_GRID', grid: solverResult[0] });
     }
     dispatch({ type: 'SET_DISPLAY_MESSAGE', message: solverResult[1] });
   };
 
   const handleClickOnCell = (event, cellKey, isRightClick = false) => {
     event.preventDefault();
-    const newCells = GridFunc.cloneGrid(cells);
-    const clickedCell = newCells[cellKey];
-    if (clickedCell != null) {
-      let newCellValue = clickedCell.guessedValue + (isRightClick ? -1 : 1);
-      if (newCellValue < 0) newCellValue = 9;
-      if (newCellValue > 9) newCellValue = 0;
-      clickedCell.setGuessedValue(newCellValue);
-      dispatch({ type: 'SET_CELLS', cells: newCells });
-    }
+    if (grid.given[cellKey]) return;
+
+    const newGrid = GridFunc.cloneGrid(grid);
+    let newCellValue = newGrid.values[cellKey] + (isRightClick ? -1 : 1);
+    if (newCellValue < 0) newCellValue = 9;
+    if (newCellValue > 9) newCellValue = 0;
+
+    newGrid.values[cellKey] = newCellValue;
+    newGrid.solved[cellKey] = 0;
+    dispatch({ type: 'SET_GRID', grid: newGrid });
   };
 
   /************** HANDLE MOUSE OVER *****************/
 
   const handleMouseOver = (cellKey) => {
-    const newCells = GridFunc.cloneGrid(cells);
-    newCells[cellKey].setPossibleValues(
-      Solver.getPossibleValuesForCell(newCells, newCells[cellKey])
-    );
+    const possibleValues = Solver.getPossibleValuesForCell(grid, cellKey);
+    const [x, y] = GridFunc.keyToCoord(cellKey);
     dispatch({
       type: 'SET_CELL_INFO',
-      cellInfo: newCells[cellKey].getCellInfo(),
+      cellInfo: {
+        key: cellKey,
+        x,
+        y,
+        possibleValues,
+      },
     });
 
-    const keysToHighlight = [
-      ...GridFunc.returnSquareKeys(newCells[cellKey]),
-      ...GridFunc.returnEntireColKeys(newCells, cellKey),
-      ...GridFunc.returnEntireRowKeys(newCells, cellKey),
-    ];
-
-    newCells.forEach((cell) => {
-      cell.setHovered(keysToHighlight.indexOf(cell.key) !== -1);
+    const keysToHighlight = Array.from(
+      new Set([
+        ...GridFunc.returnSquareKeys(cellKey),
+        ...GridFunc.returnEntireColKeys(grid, cellKey),
+        ...GridFunc.returnEntireRowKeys(grid, cellKey),
+      ])
+    );
+    dispatch({
+      type: 'SET_UI_STATE',
+      ui: {
+        hoveredCell: cellKey,
+        highlightedCells: keysToHighlight,
+      },
     });
-    dispatch({ type: 'SET_CELLS', cells: newCells });
   };
 
   const handleMouseLeaveGrid = () => {
     dispatch({ type: 'SET_CELL_INFO', cellInfo: {} });
-    const newCells = GridFunc.cloneGrid(cells);
-    newCells.forEach((cell) => {
-      cell.setHovered(false);
+    dispatch({
+      type: 'SET_UI_STATE',
+      ui: {
+        hoveredCell: null,
+        highlightedCells: [],
+      },
     });
-    dispatch({ type: 'SET_CELLS', cells: newCells });
   };
 
   /************* RENDER ******************/
+
+  const highlightedLookup = new Set(ui.highlightedCells);
 
   return (
     <div className="App">
       <div className="grid-container">
         <div className="grid" onMouseLeave={handleMouseLeaveGrid}>
-          {cells.map((cell) => (
+          {Array.from({ length: GridFunc.GRID_CELL_COUNT }, (_, cellKey) => (
             <CellDisplay
-              key={cell.key}
-              cell={cell}
+              key={cellKey}
+              cellKey={cellKey}
+              value={grid.values[cellKey]}
+              solvedValue={grid.solved[cellKey]}
+              isGiven={grid.given[cellKey]}
+              isHighlighted={highlightedLookup.has(cellKey)}
               handleClickOnCell={handleClickOnCell}
               handleMouseOver={handleMouseOver}
             />

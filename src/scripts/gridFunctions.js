@@ -1,111 +1,104 @@
-export const cloneGrid = (cells) => {
-  return cells.map((object) => ({ ...object }));
+export const GRID_SIZE = 9;
+export const GRID_CELL_COUNT = GRID_SIZE * GRID_SIZE;
+
+export const createEmptyGrid = () => {
+  return {
+    values: new Array(GRID_CELL_COUNT).fill(0),
+    given: new Array(GRID_CELL_COUNT).fill(false),
+    solved: new Array(GRID_CELL_COUNT).fill(0),
+  };
 };
 
-export const returnEntireRowCells = (cells, cell) => {
-  const row = cell.y;
-  const entireRow = [];
-
-  for (let i = 0; i < 9 * 9; i++) {
-    if (Math.floor(i / 9) === row) {
-      entireRow.push(cells[i]);
-    }
-  }
-  return entireRow;
-};
-
-export const returnEntireRowKeys = (cells, cellKey) => {
-  const row = cells[cellKey].y;
-  const entireRow = [];
-
-  for (let i = 0; i < 9 * 9; i++) {
-    if (Math.floor(i / 9) === row) {
-      entireRow.push(i);
-    }
-  }
-  return entireRow;
-};
-
-export const returnEntireColCells = (cells, cell) => {
-  const entireCol = [];
-  const col = cell.x;
-
-  for (let i = 0; i < 9 * 9; i++) {
-    if (i % 9 === col) {
-      entireCol.push(cells[i]);
-    }
-  }
-  return entireCol;
-};
-
-export const returnEntireColKeys = (cells, cellKey) => {
-  const entireCol = [];
-  const col = cells[cellKey].x;
-
-  for (let i = 0; i < 9 * 9; i++) {
-    if (i % 9 === col) {
-      entireCol.push(i);
-    }
-  }
-  return entireCol;
+export const cloneGrid = (grid) => {
+  return {
+    values: [...grid.values],
+    given: [...grid.given],
+    solved: [...grid.solved],
+  };
 };
 
 export const coordToKey = (x, y) => {
-  return 9 * y + x;
+  return GRID_SIZE * y + x;
 };
+
 export const keyToCoord = (key) => {
-  return [key % 9, Math.floor(key / 9)];
+  return [key % GRID_SIZE, Math.floor(key / GRID_SIZE)];
 };
 
-export const returnSquareKeys = (cell) => {
-  const dx = Math.floor(cell.x / 3);
-  const dy = Math.floor(cell.y / 3);
+export const returnEntireRowKeys = (_grid, cellKey) => {
+  const row = Math.floor(cellKey / GRID_SIZE);
+  const start = row * GRID_SIZE;
+  const result = [];
+  for (let i = 0; i < GRID_SIZE; i++) {
+    result.push(start + i);
+  }
+  return result;
+};
 
-  const squareCoords = [
-    [dx * 3 + 0, dy * 3 + 0],
-    [dx * 3 + 1, dy * 3 + 0],
-    [dx * 3 + 2, dy * 3 + 0],
-    [dx * 3 + 0, dy * 3 + 1],
-    [dx * 3 + 1, dy * 3 + 1],
-    [dx * 3 + 2, dy * 3 + 1],
-    [dx * 3 + 0, dy * 3 + 2],
-    [dx * 3 + 1, dy * 3 + 2],
-    [dx * 3 + 2, dy * 3 + 2],
-  ];
+export const returnEntireColKeys = (_grid, cellKey) => {
+  const col = cellKey % GRID_SIZE;
+  const result = [];
+  for (let i = 0; i < GRID_SIZE; i++) {
+    result.push(i * GRID_SIZE + col);
+  }
+  return result;
+};
+
+export const returnSquareKeys = (cellOrKey) => {
+  const cellKey = typeof cellOrKey === 'number' ? cellOrKey : cellOrKey.key;
+  const [x, y] = keyToCoord(cellKey);
+  const dx = Math.floor(x / 3);
+  const dy = Math.floor(y / 3);
 
   const squareKeys = [];
-
-  squareCoords.forEach((cellCoords) => {
-    squareKeys.push(coordToKey(cellCoords[0], cellCoords[1]));
-  });
+  for (let sy = 0; sy < 3; sy++) {
+    for (let sx = 0; sx < 3; sx++) {
+      squareKeys.push(coordToKey(dx * 3 + sx, dy * 3 + sy));
+    }
+  }
 
   return squareKeys;
 };
 
-export const getCellsByKeys = (cells, keys) => {
-  const result = [];
-  cells.forEach((cell) => {
-    const isSearched = keys.some((key) => key === cell.key);
-    if (isSearched) {
-      result.push(cell);
-    }
-  });
-
-  return result;
-};
-
-export const returnSquareCells = (cells, cell) => {
-  const keys = returnSquareKeys(cell);
-  return getCellsByKeys(cells, keys);
-};
-
-export const saveGrid = (cells) => {
-  const gridToSave = [9 * 9];
-
-  cells.forEach((cell) => {
-    gridToSave[cell.key] = cell.solvedValue;
-  });
-
+export const saveGrid = (grid) => {
+  const gridToSave = [...grid.solved];
   console.log(gridToSave);
   return gridToSave;
+};
+
+// Migration helpers: convert between the legacy Cell object shape and the
+// new plain-array model so both can coexist while refactors land.
+export const cellsToGrid = (cells) => {
+  const grid = createEmptyGrid();
+  cells.forEach((cell) => {
+    const key = cell.key;
+    grid.given[key] = Boolean(cell.isGiven);
+    grid.values[key] =
+      cell.actualValue > 0
+        ? cell.actualValue
+        : cell.guessedValue > 0
+          ? cell.guessedValue
+          : 0;
+    grid.solved[key] = cell.solvedValue > 0 ? cell.solvedValue : 0;
+  });
+  return grid;
+};
+
+export const gridToLegacyCells = (grid, highlightedCells = []) => {
+  return Array.from({ length: GRID_CELL_COUNT }, (_, key) => {
+    const [x, y] = keyToCoord(key);
+    const isGiven = Boolean(grid.given[key]);
+    const value = grid.values[key] || 0;
+    return {
+      key,
+      x,
+      y,
+      guessedValue: isGiven ? 0 : value,
+      actualValue: isGiven ? value : 0,
+      solvedValue: grid.solved[key] || 0,
+      isGiven,
+      highlighted: highlightedCells.includes(key),
+      possibleValues: [],
+    };
+  });
 };
