@@ -3,44 +3,44 @@ import * as GridFunc from './gridFunctions.js';
 let loopCount;
 const maxLoop = 300;
 
-export const solveGrid = (_cells, addToHistory = null, stepByStep = false) => {
-  let newCells = GridFunc.cloneGrid(_cells);
-  let res = false;
+export const solveGrid = (cells, addToHistory = null, stepByStep = false) => {
+  let newCells = GridFunc.cloneGrid(cells);
+  let isSolved = false;
 
-  if (!checkIfGridIsValid(_cells)) {
+  if (!checkIfGridIsValid(cells)) {
     console.log('grid not valid');
   }
 
-  let tentatives = 0;
+  let attempts = 0;
 
-  while (!res && tentatives < 50) {
+  while (!isSolved && attempts < 50) {
     loopCount = 0;
-    tentatives++;
-    newCells = GridFunc.cloneGrid(_cells);
-    res = recursiveSolver(newCells, 0, addToHistory, stepByStep);
+    attempts++;
+    newCells = GridFunc.cloneGrid(cells);
+    isSolved = recursiveSolver(newCells, 0, addToHistory, stepByStep);
   }
   console.log(
     'loop count : ',
     loopCount,
-    'tentatives : ',
-    tentatives,
-    'res : ',
-    res
+    'attempts : ',
+    attempts,
+    'solved : ',
+    isSolved
   );
 
-  if (!res) {
+  if (!isSolved) {
     GridFunc.saveGrid(newCells);
   }
-  const resString = res ? 'Success' : 'Error';
-  return [newCells, resString];
+  const resultMessage = isSolved ? 'Success' : 'Error';
+  return [newCells, resultMessage];
 };
 
-const recursiveSolver = (_cells, key, addToHistory, stepByStep) => {
+const recursiveSolver = (cells, key, addToHistory, stepByStep) => {
   loopCount++;
   if (loopCount > maxLoop) {
     return false;
   }
-  if (!checkIfGridIsValid(_cells)) {
+  if (!checkIfGridIsValid(cells)) {
     console.log('grid not valid');
   }
   if (loopCount > maxLoop + 100)
@@ -51,7 +51,7 @@ const recursiveSolver = (_cells, key, addToHistory, stepByStep) => {
     return true;
   } //Solving finished
 
-  const currentCell = _cells[key];
+  const currentCell = cells[key];
   const cellValue =
     currentCell.solvedValue > 0 ||
     currentCell.actualValue > 0 ||
@@ -59,22 +59,22 @@ const recursiveSolver = (_cells, key, addToHistory, stepByStep) => {
 
   // this cell is already solved, go to next cell
   if (cellValue) {
-    return recursiveSolver(_cells, key + 1, addToHistory, stepByStep);
+    return recursiveSolver(cells, key + 1, addToHistory, stepByStep);
   }
 
-  const pValues = getPossibleValuesForCell(_cells, currentCell);
-  let shuffledVal = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
-  for (let v = 1; v <= 9; v++) {
-    if (pValues.some((e) => e === shuffledVal[v - 1])) {
+  const possibleValues = getPossibleValuesForCell(cells, currentCell);
+  let shuffledValues = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  for (let i = 1; i <= 9; i++) {
+    if (possibleValues.some((value) => value === shuffledValues[i - 1])) {
       setSolvedValueWithHistory(
         currentCell,
-        shuffledVal[v - 1],
+        shuffledValues[i - 1],
         stepByStep,
         addToHistory
       );
 
       // try to resolve the rest of the array with this value for the current cell
-      if (recursiveSolver(_cells, key + 1, addToHistory, stepByStep))
+      if (recursiveSolver(cells, key + 1, addToHistory, stepByStep))
         return true;
     }
   }
@@ -84,15 +84,10 @@ const recursiveSolver = (_cells, key, addToHistory, stepByStep) => {
   return false; // this grid is not solvable, going back to previous recursion.
 };
 
-export const checkIfGridIsValid = (_cells) => {
-  let res = true;
-  _cells.forEach((cell) => {
-    const pValues = getPossibleValuesForCell(_cells, cell, true);
-    /*
-        if (pValues.length === 0 ) {
-            console.log("No possible value for cell : ", cell.key);
-            res = false;
-        }*/
+export const checkIfGridIsValid = (cells) => {
+  let isValid = true;
+  cells.forEach((cell) => {
+    const possibleValues = getPossibleValuesForCell(cells, cell, true);
 
     let cellValue = 0;
     if (cell.actualValue > 0) {
@@ -102,14 +97,14 @@ export const checkIfGridIsValid = (_cells) => {
     } else if (cell.guessedValue > 0) {
       cellValue = cell.guessedValue;
     }
-    if (cellValue > 0 && pValues.indexOf(cellValue) === -1) {
+    if (cellValue > 0 && possibleValues.indexOf(cellValue) === -1) {
       // if there is more than one cell with the same value
       console.log('Wrong grid values for cell : ', cell.key);
-      res = false;
+      isValid = false;
     }
   });
 
-  return res;
+  return isValid;
 };
 
 //**********************   Utilities  **************************************/
@@ -122,12 +117,12 @@ const shuffle = (array) => {
   return array;
 };
 
-const setSolvedValueWithHistory = (_cell, _val, stepByStep, addToHistory) => {
-  _cell.setSolvedValue(_val);
-  if (stepByStep && _val > 0) {
+const setSolvedValueWithHistory = (cell, value, stepByStep, addToHistory) => {
+  cell.setSolvedValue(value);
+  if (stepByStep && value > 0) {
     addToHistory({
-      key: _cell.key,
-      solvedValue: _val,
+      key: cell.key,
+      solvedValue: value,
     });
   }
 };

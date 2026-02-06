@@ -1,20 +1,9 @@
 import * as GridFunc from '../scripts/gridFunctions.js';
 
-export const ClearGridValues = (_cells) => {
-  const newCells = GridFunc.cloneGrid(_cells);
+export const ClearGridValues = (cells) => {
+  const newCells = GridFunc.cloneGrid(cells);
   newCells.forEach((cell) => {
     cell.clearCell();
-  });
-  return newCells;
-};
-
-export const LoadGridValues = (_cells, values) => {
-  let newCells = GridFunc.cloneGrid(_cells);
-  newCells = ClearGridValues(newCells);
-  newCells.forEach((cell) => {
-    if (values[cell.key] !== 0) {
-      cell.setGivenValue(values[cell.key]);
-    }
   });
   return newCells;
 };

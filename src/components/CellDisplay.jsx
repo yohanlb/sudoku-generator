@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
 function CellDisplay({ cell, handleClickOnCell, handleMouseOver }) {
-  const [clickedOn, setClickedOn] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
 
   const handleClick = (e, isRightClick = false) => {
     handleClickOnCell(e, cell.key, isRightClick);
-    setClickedOn(true);
+    setIsClicked(true);
   };
 
   const displayCellValue = () => {
@@ -51,7 +51,7 @@ function CellDisplay({ cell, handleClickOnCell, handleMouseOver }) {
     } else {
       const cellClass =
         'cell-inner notGiven ' +
-        (clickedOn ? ' clicked' : '') +
+        (isClicked ? ' clicked' : '') +
         (cell.highlighted ? ' highlighted' : '');
       return (
         <div
@@ -60,7 +60,7 @@ function CellDisplay({ cell, handleClickOnCell, handleMouseOver }) {
             handleMouseOver(cell.key);
           }}
           onTransitionEnd={() => {
-            setClickedOn(false);
+            setIsClicked(false);
           }}
           onClick={(e) => {
             handleClick(e);

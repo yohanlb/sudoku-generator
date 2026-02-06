@@ -1,21 +1,5 @@
-/**
- * Return the keys of all the other cells in the Col.
- * @param {object} cell an object of type "cell".
- * @returns {Array} Array of cells keys.
- */
-/*
-export const returnEntireColKeys = (cell) => {
-
-    const res = []
-    for (let i = 0; i < 9; i++) {
-        res.push(cell.x + 9 * i);
-    }
-    return res;
-}
-*/
-
-export const cloneGrid = (_cells) => {
-  return _cells.map((object) => ({ ...object }));
+export const cloneGrid = (cells) => {
+  return cells.map((object) => ({ ...object }));
 };
 
 export const returnEntireRowCells = (cells, cell) => {
@@ -30,8 +14,8 @@ export const returnEntireRowCells = (cells, cell) => {
   return entireRow;
 };
 
-export const returnEntireRowKeys = (_cells, _key) => {
-  const row = _cells[_key].y;
+export const returnEntireRowKeys = (cells, cellKey) => {
+  const row = cells[cellKey].y;
   const entireRow = [];
 
   for (let i = 0; i < 9 * 9; i++) {
@@ -54,9 +38,9 @@ export const returnEntireColCells = (cells, cell) => {
   return entireCol;
 };
 
-export const returnEntireColKeys = (_cells, _key) => {
+export const returnEntireColKeys = (cells, cellKey) => {
   const entireCol = [];
-  const col = _cells[_key].x;
+  const col = cells[cellKey].x;
 
   for (let i = 0; i < 9 * 9; i++) {
     if (i % 9 === col) {
@@ -69,7 +53,7 @@ export const returnEntireColKeys = (_cells, _key) => {
 export const coordToKey = (x, y) => {
   return 9 * y + x;
 };
-export const KeyToCoord = (key) => {
+export const keyToCoord = (key) => {
   return [key % 9, Math.floor(key / 9)];
 };
 
@@ -98,27 +82,27 @@ export const returnSquareKeys = (cell) => {
   return squareKeys;
 };
 
-export const getSeveralCellByKey = (cells, keys) => {
-  const res = [];
+export const getCellsByKeys = (cells, keys) => {
+  const result = [];
   cells.forEach((cell) => {
     const isSearched = keys.some((key) => key === cell.key);
     if (isSearched) {
-      res.push(cell);
+      result.push(cell);
     }
   });
 
-  return res;
+  return result;
 };
 
 export const returnSquareCells = (cells, cell) => {
   const keys = returnSquareKeys(cell);
-  return getSeveralCellByKey(cells, keys);
+  return getCellsByKeys(cells, keys);
 };
 
-export const saveGrid = (_cells) => {
+export const saveGrid = (cells) => {
   const gridToSave = [9 * 9];
 
-  _cells.forEach((cell) => {
+  cells.forEach((cell) => {
     gridToSave[cell.key] = cell.solvedValue;
   });
 

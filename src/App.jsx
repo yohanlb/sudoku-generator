@@ -2,15 +2,10 @@ import React, { useEffect, useReducer } from 'react';
 import CellDisplay from './components/CellDisplay';
 import Cell from './scripts/Cell';
 import * as GridFunc from './scripts/gridFunctions.js';
-import * as GridValues from './scripts/gridValues.js';
 import * as Solver from './scripts/solver.js';
 import SidePanel from './components/SidePanel';
 import { useInterval } from './hooks/useInterval';
-import {
-  initialState,
-  LoadGridValues,
-  sudokuReducer,
-} from './state/sudokuReducer';
+import { initialState, sudokuReducer } from './state/sudokuReducer';
 
 import './styles/App.scss';
 
@@ -31,23 +26,17 @@ function App() {
   }, 10);
 
   useEffect(() => {
-    let tempCells = [];
+    const initialCells = [];
     for (let i = 0; i < 9 * 9; i++) {
-      tempCells.push(new Cell(i));
+      initialCells.push(new Cell(i));
     }
-    dispatch({ type: 'SET_CELLS', cells: tempCells });
+    dispatch({ type: 'SET_CELLS', cells: initialCells });
   }, []);
 
   /***************** HANDLE CLICKS ****************/
 
   const handleClickOnClearAll = () => {
     dispatch({ type: 'CLEAR_GRID' });
-  };
-
-  const handleClickOnLoadValues = () => {
-    const newCells = LoadGridValues(cells, GridValues.arrayError);
-    dispatch({ type: 'SET_CELLS', cells: newCells });
-    dispatch({ type: 'CLEAR_HISTORY' });
   };
 
   const handleClickOnSolve = (stepByStep = false) => {
@@ -69,18 +58,10 @@ function App() {
     dispatch({ type: 'SET_DISPLAY_MESSAGE', message: solverResult[1] });
   };
 
-  const handleClickOnGenerate = (stepByStep, nbOfCellsToShow) => {
-    // Generate feature disabled
-    dispatch({
-      type: 'SET_DISPLAY_MESSAGE',
-      message: 'Generate feature temporarily disabled',
-    });
-  };
-
-  const handleClickOnCell = (event, _key, isRightClick = false) => {
+  const handleClickOnCell = (event, cellKey, isRightClick = false) => {
     event.preventDefault();
     const newCells = GridFunc.cloneGrid(cells);
-    const clickedCell = newCells[_key];
+    const clickedCell = newCells[cellKey];
     if (clickedCell != null) {
       let newCellValue = clickedCell.guessedValue + (isRightClick ? -1 : 1);
       if (newCellValue < 0) newCellValue = 9;
@@ -92,20 +73,20 @@ function App() {
 
   /************** HANDLE MOUSE OVER *****************/
 
-  const handleMouseOver = (_cellKey) => {
+  const handleMouseOver = (cellKey) => {
     const newCells = GridFunc.cloneGrid(cells);
-    newCells[_cellKey].setPossibleValues(
-      Solver.getPossibleValuesForCell(newCells, newCells[_cellKey])
+    newCells[cellKey].setPossibleValues(
+      Solver.getPossibleValuesForCell(newCells, newCells[cellKey])
     );
     dispatch({
       type: 'SET_CELL_INFO',
-      cellInfo: newCells[_cellKey].getCellInfo(),
+      cellInfo: newCells[cellKey].getCellInfo(),
     });
 
     const keysToHighlight = [
-      ...GridFunc.returnSquareKeys(newCells[_cellKey]),
-      ...GridFunc.returnEntireColKeys(newCells, _cellKey),
-      ...GridFunc.returnEntireRowKeys(newCells, _cellKey),
+      ...GridFunc.returnSquareKeys(newCells[cellKey]),
+      ...GridFunc.returnEntireColKeys(newCells, cellKey),
+      ...GridFunc.returnEntireRowKeys(newCells, cellKey),
     ];
 
     newCells.forEach((cell) => {
@@ -143,9 +124,7 @@ function App() {
       <SidePanel
         cellInfo={cellInfo}
         handleClickOnSolve={handleClickOnSolve}
-        handleClickOnGenerate={handleClickOnGenerate}
         handleClickOnClearAll={handleClickOnClearAll}
-        handleClickOnLoadValues={handleClickOnLoadValues}
         displayMessage={displayMessage}
       />
     </div>

@@ -9,10 +9,6 @@ export default function Cell(key) {
   this.highlighted = false;
   this.possibleValues = [];
 
-  this.printCellInfo = function () {
-    console.table(this);
-  };
-
   this.setPossibleValues = function (array) {
     this.possibleValues = array;
   };
