@@ -1,8 +1,8 @@
 import React, { useReducer } from 'react';
 import CellDisplay from './components/CellDisplay';
-import * as GridFunc from './scripts/gridFunctions.js';
-import * as Solver from './scripts/solver.js';
 import SidePanel from './components/SidePanel';
+import * as GridFunc from './core/grid.js';
+import * as Solver from './core/solver.js';
 import { useInterval } from './hooks/useInterval';
 import { initialState, sudokuReducer } from './state/sudokuReducer';
 
@@ -51,16 +51,14 @@ function App() {
 
   const handleClickOnCell = (event, cellKey, isRightClick = false) => {
     event.preventDefault();
-    if (grid.given[cellKey]) return;
-
-    const newGrid = GridFunc.cloneGrid(grid);
-    let newCellValue = newGrid.values[cellKey] + (isRightClick ? -1 : 1);
-    if (newCellValue < 0) newCellValue = 9;
-    if (newCellValue > 9) newCellValue = 0;
-
-    newGrid.values[cellKey] = newCellValue;
-    newGrid.solved[cellKey] = 0;
-    dispatch({ type: 'SET_GRID', grid: newGrid });
+    const newGrid = GridFunc.cycleInputValue(
+      grid,
+      cellKey,
+      isRightClick ? -1 : 1
+    );
+    if (newGrid !== grid) {
+      dispatch({ type: 'SET_GRID', grid: newGrid });
+    }
   };
 
   /************** HANDLE MOUSE OVER *****************/
@@ -78,13 +76,7 @@ function App() {
       },
     });
 
-    const keysToHighlight = Array.from(
-      new Set([
-        ...GridFunc.returnSquareKeys(cellKey),
-        ...GridFunc.returnEntireColKeys(grid, cellKey),
-        ...GridFunc.returnEntireRowKeys(grid, cellKey),
-      ])
-    );
+    const keysToHighlight = GridFunc.getRelatedCellKeys(cellKey);
     dispatch({
       type: 'SET_UI_STATE',
       ui: {

@@ -1,4 +1,4 @@
-import * as GridFunc from '../scripts/gridFunctions.js';
+import * as GridFunc from '../core/grid.js';
 
 export const clearGridValues = () => {
   return GridFunc.createEmptyGrid();
@@ -34,11 +34,6 @@ export function sudokuReducer(state, action) {
         history: state.history.slice(1),
       };
     }
-    case 'SET_CELLS':
-      return {
-        ...state,
-        grid: action.grid || GridFunc.cellsToGrid(action.cells),
-      };
     case 'SET_GRID':
       return { ...state, grid: action.grid };
     case 'SET_DISPLAY_MESSAGE':
