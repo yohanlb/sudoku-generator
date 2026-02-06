@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 function PossibleValues({ possibleValues }) {
   if (possibleValues.length > 0) {
@@ -7,7 +7,7 @@ function PossibleValues({ possibleValues }) {
         <p>
           Possible values :
           {possibleValues.map((val) => {
-            return <b key={val}> {val} </b>
+            return <b key={val}> {val} </b>;
           })}
         </p>
       </div>
