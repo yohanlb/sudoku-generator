@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { createSudokuHandlers } from '../state/sudokuHandlers.js';
+import { createSudokuHandlers } from '../state/sudoku-handlers.js';
 
 export function useSudokuHandlers(state, dispatch) {
   return useMemo(

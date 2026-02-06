@@ -1,11 +1,11 @@
 import React, { useReducer } from 'react';
-import CellDisplay from './components/CellDisplay';
-import SidePanel from './components/SidePanel';
-import { useInterval } from './hooks/useInterval';
-import { useSudokuHandlers } from './hooks/useSudokuHandlers';
-import { initialState, sudokuReducer } from './state/sudokuReducer';
+import CellDisplay from './components/cell-display';
+import SidePanel from './components/side-panel';
+import { useInterval } from './hooks/use-interval';
+import { useSudokuHandlers } from './hooks/use-sudoku-handlers';
+import { initialState, sudokuReducer } from './state/sudoku-reducer';
 
-import './styles/App.scss';
+import './styles/app.scss';
 
 function App() {
   const [state, dispatch] = useReducer(sudokuReducer, initialState);

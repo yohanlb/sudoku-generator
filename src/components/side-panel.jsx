@@ -1,6 +1,6 @@
 import React from 'react';
 
-import '../styles/SidePanel.scss';
+import '../styles/side-panel.scss';
 
 function SidePanel({
   handleClickOnSolve,
